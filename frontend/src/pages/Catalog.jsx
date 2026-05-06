@@ -1,62 +1,108 @@
-import { useState, useEffect } from 'react';
-import { products } from '../data/products';
-import ProductCard from '../components/ProductCard';
-import FilterSidebar from '../components/FilterSidebar';
-import Pagination from '../components/Pagination';
+import { useState } from 'react'
+import { useGetProductsQuery, useGetCategoriesQuery } from '../app/api/productApi'
+import ProductCard from '../components/ProductCard'
+import FilterSidebar from '../components/FilterSidebar'
+import Pagination from '../components/Pagination'
+import './Catalog.css'
 
-const ITEMS_PER_PAGE = 6;
+const ITEMS_PER_PAGE = 6
 
 export default function Catalog() {
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [filters, setFilters] = useState({ categories: [], power_min: '', power_max: '', price_min: '', price_max: '', sort: 'default' });
-  const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState({
+    categories: [],
+    power_min: '',
+    power_max: '',
+    price_min: '',
+    price_max: '',
+    sort: 'default',
+  })
+  const [currentPage, setCurrentPage] = useState(1)
 
-  useEffect(() => {
-    let result = [...products];
-    if (filters.categories.length > 0) {
-      result = result.filter(p => filters.categories.includes(p.category_id));
-    }
-    // ИСПРАВЛЕНО: проверяем на undefined и пустую строку, чтобы 0 учитывался
-    if (filters.power_min !== '' && filters.power_min !== undefined && filters.power_min !== null) {
-      result = result.filter(p => p.power_watt >= Number(filters.power_min));
-    }
-    if (filters.power_max !== '' && filters.power_max !== undefined && filters.power_max !== null) {
-      result = result.filter(p => p.power_watt <= Number(filters.power_max));
-    }
-    if (filters.price_min !== '' && filters.price_min !== undefined && filters.price_min !== null) {
-      result = result.filter(p => p.price >= Number(filters.price_min));
-    }
-    if (filters.price_max !== '' && filters.price_max !== undefined && filters.price_max !== null) {
-      result = result.filter(p => p.price <= Number(filters.price_max));
-    }
-    if (filters.sort === 'price_asc') result.sort((a,b) => a.price - b.price);
-    if (filters.sort === 'price_desc') result.sort((a,b) => b.price - a.price);
-    setFilteredProducts(result);
-    setCurrentPage(1);
-  }, [filters]);
+  const params = {}
+  if (filters.price_min) params.min_price = filters.price_min
+  if (filters.price_max) params.max_price = filters.price_max
+  if (filters.categories.length === 1) params.category_id = filters.categories[0]
 
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const paginatedProducts = filteredProducts.slice((currentPage-1)*ITEMS_PER_PAGE, currentPage*ITEMS_PER_PAGE);
+  const { data: productsData, error, isLoading } = useGetProductsQuery(params)
+  const { data: categories } = useGetCategoriesQuery()
+
+  // === ИСПРАВЛЕНИЕ: явная обработка ошибки сети и загрузки ===
+  if (isLoading) {
+    return <div className="status-message">⏳ Загрузка каталога...</div>
+  }
+  if (error) {
+    return (
+      <div className="status-message error">
+        ❌ Ошибка загрузки товаров: {error.message || 'Неизвестная ошибка'}
+      </div>
+    )
+  }
+
+  let filtered = Array.isArray(productsData) ? [...productsData] : []
+  if (filters.categories.length > 1) {
+    filtered = filtered.filter((p) => filters.categories.includes(p.category_id))
+  } else if (filters.categories.length === 1 && params.category_id) {
+    filtered = filtered.filter((p) => p.category_id === filters.categories[0])
+  }
+  if (filters.power_min !== '') {
+    filtered = filtered.filter((p) => p.power_watt >= Number(filters.power_min))
+  }
+  if (filters.power_max !== '') {
+    filtered = filtered.filter((p) => p.power_watt <= Number(filters.power_max))
+  }
+
+  if (filters.sort === 'price_asc') {
+    filtered.sort((a, b) => a.price - b.price)
+  } else if (filters.sort === 'price_desc') {
+    filtered.sort((a, b) => b.price - a.price)
+  }
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  if (currentPage > totalPages && totalPages > 0) setCurrentPage(1)
+
+  const start = (currentPage - 1) * ITEMS_PER_PAGE
+  const paginatedProducts = filtered.slice(start, start + ITEMS_PER_PAGE)
 
   return (
-    <div className="clearfix">
-      <FilterSidebar filters={filters} onFilterChange={setFilters} />
-      <div className="products-area">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <span></span>
-          <select value={filters.sort} onChange={e => setFilters({...filters, sort: e.target.value})}>
+    <div className="catalog-page">
+      <FilterSidebar
+        filters={filters}
+        onFilterChange={(f) => {
+          setFilters(f)
+          setCurrentPage(1)
+        }}
+        categories={categories || []}
+      />
+      <div className="catalog-content">
+        <div className="sort-bar">
+          <span>Найдено: {filtered.length}</span>
+          <select
+            value={filters.sort}
+            onChange={(e) => {
+              setFilters({ ...filters, sort: e.target.value })
+              setCurrentPage(1)
+            }}
+          >
             <option value="default">Сортировка</option>
             <option value="price_asc">Сначала дешёвые</option>
             <option value="price_desc">Сначала дорогие</option>
           </select>
         </div>
-        {paginatedProducts.length === 0 ? <p>Товаров не найдено</p> : (
-          <div className="grid">
-            {paginatedProducts.map(p => <ProductCard key={p.id} product={p} />)}
+        {paginatedProducts.length === 0 ? (
+          <p>Товары не найдены</p>
+        ) : (
+          <div className="product-grid">
+            {paginatedProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
           </div>
         )}
-        {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={(page) => setCurrentPage(page)}
+        />
       </div>
     </div>
-  );
+  )
 }

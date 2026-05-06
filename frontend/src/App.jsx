@@ -1,30 +1,27 @@
-import { Routes, Route } from 'react-router-dom';
-import { CartProvider } from './contexts/CartContext';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import Catalog from './pages/Catalog';
-import ProductDetails from './pages/ProductDetails';
-import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
-import Confirmation from './pages/Confirmation';
+import { Routes, Route } from 'react-router-dom'
+import Header from './components/Header'
+import Footer from './components/Footer'
+import Catalog from './pages/Catalog'
+import ProductDetails from './pages/ProductDetails'
+import Cart from './pages/Cart'
+import Checkout from './pages/Checkout'
+import Confirmation from './pages/Confirmation'
+import './App.css'
 
-function App() {
+export default function App() {
   return (
-    <CartProvider>
+    <>
       <Header />
-      <main className="container" style={{ minHeight: '70vh', marginTop: '20px' }}>
+      <main className="container">
         <Routes>
           <Route path="/" element={<Catalog />} />
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
-          <Route path="/confirmation" element={<Confirmation />} />
-          <Route path="*" element={<h2>404 - Страница не найдена</h2>} />
+          <Route path="/confirmation/:orderNumber?" element={<Confirmation />} />
         </Routes>
       </main>
       <Footer />
-    </CartProvider>
-  );
+    </>
+  )
 }
-
-export default App;

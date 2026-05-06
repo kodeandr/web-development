@@ -1,64 +1,65 @@
-import { Link } from 'react-router-dom';
-import { useCart } from '../contexts/CartContext';
-import { products } from '../data/products';
+import { useSelector, useDispatch } from 'react-redux'
+import { Link } from 'react-router-dom'
+import { updateQuantity, removeFromCart } from '../features/cart/cartSlice'
+import './Cart.css'
 
 export default function Cart() {
-  const { cartItems, removeFromCart, updateQuantity, totalPrice } = useCart();
+  const items = useSelector((state) => state.cart)
+  const dispatch = useDispatch()
+  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
-  const handleQuantityChange = (itemId, newQty) => {
-    const product = products.find(p => p.id === itemId);
-    const maxStock = product?.stock || 0;
-    if (newQty > maxStock) {
-      alert(`Нельзя добавить больше ${maxStock} шт. (остаток на складе)`);
-      return;
-    }
-    if (newQty < 1) {
-      removeFromCart(itemId);
-      return;
-    }
-    updateQuantity(itemId, newQty);
-  };
-
-  if (cartItems.length === 0) return <h2>Корзина пуста <Link to="/">Перейти в каталог</Link></h2>;
+  if (items.length === 0) {
+    return (
+      <div className="cart-empty">
+        <h2>Корзина пуста</h2>
+        <Link to="/">Вернуться к покупкам</Link>
+      </div>
+    )
+  }
 
   return (
-    <div>
-      <h1>Корзина</h1>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr><th>Товар</th><th>Цена</th><th>Количество</th><th>Сумма</th><th></th></tr>
-        </thead>
-        <tbody>
-          {cartItems.map(item => {
-            const maxStock = products.find(p => p.id === item.id)?.stock || 0;
-            return (
-              <tr key={item.id}>
-                <td>{item.name}</td>
-                <td>{item.price} ₽</td>
-                <td>
-                  <input
-                    type="number"
-                    min="1"
-                    max={maxStock}
-                    value={item.quantity}
-                    onChange={e => handleQuantityChange(item.id, parseInt(e.target.value))}
-                    style={{ width: '60px' }}
-                  />
-                </td>
-                <td>{item.quantity * item.price} ₽</td>
-                <td><button className="btn-danger" onClick={() => removeFromCart(item.id)}>Удалить</button></td>
-              </tr>
-            );
-          })}
-        </tbody>
-        <tfoot>
-          <tr><td colSpan="3"><strong>Итого:</strong></td><td><strong>{totalPrice} ₽</strong></td><td></td></tr>
-        </tfoot>
-      </table>
-      <div style={{ marginTop: '20px' }}>
-        <Link to="/"><button className="btn-secondary">Продолжить покупки</button></Link>
-        <Link to="/checkout"><button style={{ marginLeft: '10px' }}>Оформить заказ</button></Link>
+    <div className="cart-page">
+      <h2>Корзина</h2>
+      <ul className="cart-list">
+        {items.map((item) => (
+          <li key={item.id} className="cart-item">
+            <div className="cart-item__info">
+              <h3>{item.name}</h3>
+              <p>{item.price} ₽ × {item.quantity} = {(item.price * item.quantity).toFixed(2)} ₽</p>
+            </div>
+            <div className="cart-item__controls">
+              <input
+                type="number"
+                min="1"
+                max={item.stock_quantity}
+                value={item.quantity}
+                onChange={(e) => {
+                  const newQty = Number(e.target.value)
+                  if (!isNaN(newQty) && newQty >= 0) {
+                    if (newQty > item.stock_quantity) {
+                      alert(`Доступно только ${item.stock_quantity} шт.`)
+                      dispatch(updateQuantity({ id: item.id, quantity: item.stock_quantity }))
+                    } else {
+                      dispatch(updateQuantity({ id: item.id, quantity: newQty }))
+                    }
+                  }
+                }}
+                className="qty-input"
+              />
+              <button
+                className="btn-remove"
+                onClick={() => dispatch(removeFromCart(item.id))}
+              >
+                Удалить
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="cart-total">
+        <strong>Итого: {totalPrice.toFixed(2)} ₽</strong>
       </div>
+      <Link to="/checkout" className="checkout-link">Оформить заказ</Link>
     </div>
-  );
+  )
 }

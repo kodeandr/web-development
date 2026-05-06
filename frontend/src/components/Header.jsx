@@ -1,19 +1,21 @@
-import { Link } from 'react-router-dom';
-import { useCart } from '../contexts/CartContext';
+import { Link } from 'react-router-dom'
+import { useSelector } from 'react-redux'
+import './Header.css'
 
 export default function Header() {
-  const { totalItems } = useCart();
+  const totalItems = useSelector((state) =>
+    state.cart.reduce((sum, item) => sum + item.quantity, 0)
+  )
   return (
-    <header style={{ background: '#343a40', color: 'white', padding: '15px 0' }}>
-      <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Link to="/" style={{ color: 'white', fontSize: '1.5rem', fontWeight: 'bold' }}>Лампочки</Link>
+    <header className="header">
+      <div className="header-inner">
+        <Link to="/" className="logo">Лампочки.рф</Link>
         <nav>
-          <Link to="/" style={{ color: 'white', marginRight: '20px' }}>Каталог</Link>
-          <Link to="/cart" style={{ color: 'white', position: 'relative' }}>
-            Корзина {totalItems > 0 && <span style={{ background: '#dc3545', borderRadius: '50%', padding: '2px 6px', marginLeft: '5px', fontSize: '12px' }}>{totalItems}</span>}
+          <Link to="/cart" className="cart-link">
+            Корзина ({totalItems})
           </Link>
         </nav>
       </div>
     </header>
-  );
+  )
 }

@@ -1,69 +1,99 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useCart } from '../contexts/CartContext';
+import { useState } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
+import { useCreateOrderMutation } from '../app/api/orderApi'
+import { clearCart } from '../features/cart/cartSlice'
+import './Checkout.css'
 
 export default function Checkout() {
-  const { cartItems, totalPrice, clearCart } = useCart();
-  const navigate = useNavigate();
+  const cart = useSelector((state) => state.cart)
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const [createOrder, { isLoading, error: orderError }] = useCreateOrderMutation()
   const [form, setForm] = useState({
-    name: '', phone: '', email: '', address: '', payment: 'card'
-  });
-  const [errors, setErrors] = useState({});
+    customer_name: '',
+    customer_phone: '',
+    customer_email: '',
+    delivery_address: '',
+    payment_method: 'card',
+  })
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  if (cart.length === 0) {
+    return <p>Корзина пуста. <a href="/">Вернуться</a></p>
+  }
 
-  const validate = () => {
-    const newErrors = {};
-    if (!form.name.trim()) newErrors.name = 'Введите ФИО';
-    if (!form.phone.trim()) newErrors.phone = 'Введите телефон';
-    else if (!/^[\+\d\s\-\(\)]{10,}$/.test(form.phone)) newErrors.phone = 'Неверный формат телефона';
-    if (!form.email.trim()) newErrors.email = 'Введите email';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = 'Неверный формат email';
-    if (!form.address.trim()) newErrors.address = 'Введите адрес';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    const items = cart.map((item) => ({
+      product_id: item.id,
+      quantity: item.quantity,
+      price: item.price,
+    }))
+    const orderData = { ...form, items }
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-    // Уникальный номер заказа: ORD-YYYYMMDDHHMMSS-xxxx (xxxx – случайные 4 цифры)
-    const now = new Date();
-    const datePart = now.toISOString().slice(0,19).replace(/[-:T]/g, '');
-    const random = Math.floor(1000 + Math.random() * 9000);
-    const orderNumber = `ORD-${datePart}-${random}`;
-    localStorage.setItem('lastOrder', JSON.stringify({ orderNumber, items: cartItems, total: totalPrice, ...form }));
-    clearCart();
-    navigate('/confirmation', { state: { orderNumber } });
-  };
-
-  if (cartItems.length === 0) {
-    navigate('/');
-    return null;
+    try {
+      const result = await createOrder(orderData).unwrap()
+      dispatch(clearCart())
+      navigate(`/confirmation/${result.order_number}`)
+    } catch (err) {
+      // Ошибка будет сохранена в orderError, отобразим ниже
+      console.error('Ошибка создания заказа:', err)
+    }
   }
 
   return (
-    <div style={{ display: 'flex', gap: '40px', flexWrap: 'wrap' }}>
-      <form onSubmit={handleSubmit} style={{ flex: 2 }}>
-        <h2>Оформление заказа</h2>
-        <input type="text" name="name" placeholder="ФИО" value={form.name} onChange={handleChange} style={{ width: '100%', marginBottom: '8px' }} />
-        {errors.name && <span style={{ color: 'red', fontSize: '12px' }}>{errors.name}</span>}<br />
-        <input type="tel" name="phone" placeholder="Телефон (+7 999 123-45-67)" value={form.phone} onChange={handleChange} style={{ width: '100%', marginBottom: '8px' }} />
-        {errors.phone && <span style={{ color: 'red', fontSize: '12px' }}>{errors.phone}</span>}<br />
-        <input type="email" name="email" placeholder="Email" value={form.email} onChange={handleChange} style={{ width: '100%', marginBottom: '8px' }} />
-        {errors.email && <span style={{ color: 'red', fontSize: '12px' }}>{errors.email}</span>}<br />
-        <input type="text" name="address" placeholder="Адрес доставки" value={form.address} onChange={handleChange} style={{ width: '100%', marginBottom: '8px' }} />
-        {errors.address && <span style={{ color: 'red', fontSize: '12px' }}>{errors.address}</span>}<br />
-        <label><input type="radio" name="payment" value="card" checked={form.payment === 'card'} onChange={handleChange} /> Карта онлайн</label>
-        <label><input type="radio" name="payment" value="cash" checked={form.payment === 'cash'} onChange={handleChange} style={{ marginLeft: '15px' }}/> Наличные при получении</label><br />
-        <button type="submit">Подтвердить заказ</button>
+    <div className="checkout-page">
+      <h2>Оформление заказа</h2>
+      <form onSubmit={handleSubmit} className="checkout-form">
+        <input
+          type="text"
+          placeholder="Ф.И.О."
+          required
+          value={form.customer_name}
+          onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
+        />
+        <input
+          type="tel"
+          placeholder="Телефон"
+          required
+          value={form.customer_phone}
+          onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          required
+          value={form.customer_email}
+          onChange={(e) => setForm({ ...form, customer_email: e.target.value })}
+        />
+        <textarea
+          placeholder="Адрес доставки"
+          required
+          value={form.delivery_address}
+          onChange={(e) => setForm({ ...form, delivery_address: e.target.value })}
+        />
+        <select
+          value={form.payment_method}
+          onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
+        >
+          <option value="card">Карта</option>
+          <option value="cash">Наличные</option>
+        </select>
+        <p className="total-info">
+          Итого: {cart.reduce((s, i) => s + i.price * i.quantity, 0).toFixed(2)} ₽
+        </p>
+
+        {/* === ИСПРАВЛЕНИЕ: отображение ошибки прямо в форме === */}
+        {orderError && (
+          <div className="error-message">
+            {orderError.data?.detail || 'Не удалось создать заказ'}
+          </div>
+        )}
+
+        <button type="submit" disabled={isLoading} className="btn-primary">
+          {isLoading ? 'Оформление...' : 'Подтвердить заказ'}
+        </button>
       </form>
-      <div style={{ flex: 1, background: '#f1f1f1', padding: '15px', borderRadius: '8px' }}>
-        <h3>Ваш заказ</h3>
-        {cartItems.map(i => <p key={i.id}>{i.name} x{i.quantity} = {i.price * i.quantity} ₽</p>)}
-        <hr />
-        <strong>Итого: {totalPrice} ₽</strong>
-      </div>
     </div>
-  );
+  )
 }

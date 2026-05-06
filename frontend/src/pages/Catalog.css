@@ -1,0 +1,28 @@
+.catalog-page {
+  display: flex;          /* отменяем float, используем flex */
+  gap: 20px;
+}
+.catalog-content {
+  flex: 1;
+}
+.sort-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  background: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+}
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.status-message {
+  text-align: center;
+  padding: 40px;
+}
+.error {
+  color: red;
+}

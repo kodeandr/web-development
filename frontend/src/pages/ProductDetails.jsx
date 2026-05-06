@@ -1,66 +1,80 @@
-import { useParams, Link } from 'react-router-dom';
-import { products } from '../data/products';
-import { useCart } from '../contexts/CartContext';
-import { useState } from 'react';
+import { useParams } from 'react-router-dom'
+import { useGetProductByIdQuery } from '../app/api/productApi'
+import { useDispatch } from 'react-redux'
+import { addToCart } from '../features/cart/cartSlice'
+import { useState } from 'react'
+import './ProductDetails.css'
 
 export default function ProductDetails() {
-  const { id } = useParams();
-  const product = products.find(p => p.id === parseInt(id));
-  const { addToCart } = useCart();
-  const [quantity, setQuantity] = useState(1);
-  if (!product) return <h2>Товар не найден</h2>;
+  const { id } = useParams()
+  const { data: product, error, isLoading } = useGetProductByIdQuery(Number(id))
+  const dispatch = useDispatch()
+  const [qty, setQty] = useState(1)
 
-  // FIX: максимальное количество ограничено остатком stock
-  const maxStock = product.stock || 0;
-  const handleQuantityChange = (delta) => {
-    setQuantity(prev => Math.min(maxStock, Math.max(1, prev + delta)));
-  };
-  const handleInputChange = (e) => {
-    let val = parseInt(e.target.value);
-    if (isNaN(val)) val = 1;
-    val = Math.min(maxStock, Math.max(1, val));
-    setQuantity(val);
-  };
+  // === ИСПРАВЛЕНИЕ: обработка состояний ===
+  if (isLoading) return <div className="status-message">Загрузка товара...</div>
+  if (error) {
+    if (error.status === 404) {
+      return <div className="status-message error">Товар не найден</div>
+    }
+    return <div className="status-message error">Ошибка: {error.message}</div>
+  }
+  if (!product) {
+    return <div className="status-message error">Товар не найден</div>
+  }
 
-  const related = products.filter(p => p.category_id === product.category_id && p.id !== product.id).slice(0, 3);
+  const handleAdd = () => {
+    if (qty > product.stock_quantity) {
+      alert('Недостаточно товара на складе')
+      return
+    }
+    dispatch(addToCart({ product, quantity: qty }))
+  }
+
+  const handleImgError = (e) => {
+    e.target.src = '/placeholder.png'
+  }
 
   return (
-    <div>
-      <Link to="/">← Вернуться в каталог</Link>
-      <div style={{ display: 'flex', gap: '40px', marginTop: '20px', flexWrap: 'wrap' }}>
-        <img src={product.image} alt={product.name} style={{ width: '300px', height: '300px', objectFit: 'cover' }} />
-        <div>
-          <h1>{product.name}</h1>
-          <p>Артикул: {product.sku}</p>
-          <p>Мощность: {product.power_watt} Вт</p>
-          <p>Световой поток: {product.lumen} лм</p>
-          <p>Цветовая температура: {product.color_temp_k} K</p>
-          <p>Срок службы: {product.life_hours} ч</p>
-          <p className="price">{product.price} ₽</p>
-          <p>В наличии: {maxStock} шт.</p>
-          <div>
-            <button onClick={() => handleQuantityChange(-1)} disabled={quantity <= 1}>-</button>
-            <span style={{ margin: '0 10px' }}>{quantity}</span>
-            <button onClick={() => handleQuantityChange(1)} disabled={quantity >= maxStock}>+</button>
-            <input type="number" min="1" max={maxStock} value={quantity} onChange={handleInputChange} style={{ width: '60px', marginLeft: '10px' }} />
+    <div className="product-details">
+      <div className="product-details__image">
+        <img
+          src={product.images?.[0]?.image_url || '/placeholder.png'}
+          alt={product.name}
+          onError={handleImgError}
+        />
+      </div>
+      <div className="product-details__info">
+        <h1>{product.name}</h1>
+        <p className="product-details__category">{product.category_name}</p>
+        <p className="product-details__description">{product.description}</p>
+        <table className="product-details__specs">
+          <tbody>
+            <tr><td>Мощность:</td><td>{product.power_watt} Вт</td></tr>
+            <tr><td>Световой поток:</td><td>{product.lumen} Лм</td></tr>
+            <tr><td>Цветовая температура:</td><td>{product.color_temp_k} K</td></tr>
+            <tr><td>Срок службы:</td><td>{product.life_hours} ч</td></tr>
+            <tr><td>В наличии:</td><td>{product.stock_quantity} шт.</td></tr>
+          </tbody>
+        </table>
+        <div className="product-details__buy">
+          <span className="product-details__price">{product.price} ₽</span>
+          <div className="qty-control">
+            <button onClick={() => setQty(Math.max(1, qty - 1))}>-</button>
+            <input
+              type="number"
+              value={qty}
+              min="1"
+              max={product.stock_quantity}
+              onChange={(e) => setQty(Number(e.target.value))}
+            />
+            <button onClick={() => setQty(qty + 1)}>+</button>
           </div>
-          <button onClick={() => addToCart(product, quantity)} style={{ marginTop: '15px' }}>Добавить в корзину</button>
+          <button className="btn-primary" onClick={handleAdd}>
+            Добавить в корзину
+          </button>
         </div>
       </div>
-      <h2>Похожие товары</h2>
-      <div className="grid" style={{ marginTop: '20px' }}>
-        {related.map(p => (
-          <Link to={`/product/${p.id}`} key={p.id} style={{ textDecoration: 'none', color: 'inherit' }}>
-            <div className="card">
-              <img src={p.image} alt={p.name} className="card-img" />
-              <div className="card-body">
-                <h3>{p.name}</h3>
-                <p className="price">{p.price} ₽</p>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
     </div>
-  );
+  )
 }

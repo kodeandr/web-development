@@ -1,0 +1,19 @@
+.filter-sidebar {
+  width: 220px;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.filter-group {
+  margin-bottom: 15px;
+}
+.filter-item {
+  display: block;
+  margin: 5px 0;
+}
+.filter-input {
+  width: 80px;
+  padding: 4px;
+  margin-right: 5px;
+}

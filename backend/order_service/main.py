@@ -1,25 +1,36 @@
 ﻿from fastapi import FastAPI, HTTPException
-from typing import Optional
+from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional, List
 import asyncpg
-import uuid
-from datetime import datetime
 import httpx
+from datetime import datetime
+import secrets
+from database import get_db_pool           # <-- абсолютный импорт
 
 app = FastAPI(title="Order Service")
 
-DATABASE_URL = "postgresql://postgres:123@localhost/lamp_shop"
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 PRODUCT_SERVICE_URL = "http://localhost:8000"
 
 @app.on_event("startup")
 async def startup():
-    app.state.pool = await asyncpg.create_pool(DATABASE_URL)
+    app.state.pool = await get_db_pool()
 
 @app.on_event("shutdown")
 async def shutdown():
     await app.state.pool.close()
 
 def generate_order_number():
-    return f"ORD-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:4]}"
+    now = datetime.now().strftime("%y%m%d%H%M%S")
+    suffix = secrets.token_hex(2)
+    return f"ORD-{now}{suffix}"
 
 @app.get("/orders")
 async def list_orders(status_id: Optional[int] = None, limit: int = 50):
@@ -69,11 +80,10 @@ async def create_order(order_data: dict):
     for field in required:
         if field not in order_data:
             raise HTTPException(400, f"Missing field: {field}")
-    
     items = order_data["items"]
     if not isinstance(items, list) or len(items) == 0:
         raise HTTPException(400, "Items must be a non-empty list")
-    
+
     async with app.state.pool.acquire() as conn:
         async with httpx.AsyncClient(timeout=10.0) as client:
             for item in items:
@@ -81,34 +91,32 @@ async def create_order(order_data: dict):
                 qty = item["quantity"]
                 resp = await client.get(f"{PRODUCT_SERVICE_URL}/products/{prod_id}")
                 if resp.status_code != 200:
-                    raise HTTPException(400, f"Product {prod_id} not found (HTTP {resp.status_code})")
+                    raise HTTPException(400, f"Product {prod_id} not found")
                 product = resp.json()
                 stock = product.get("stock_quantity", 0)
                 if stock < qty:
                     raise HTTPException(400, f"Not enough stock for product {prod_id}. Available: {stock}")
-                new_stock = stock - qty
-                update_resp = await client.put(f"{PRODUCT_SERVICE_URL}/products/{prod_id}", json={"stock_quantity": new_stock})
-                if update_resp.status_code != 200:
-                    raise HTTPException(500, f"Failed to update stock for product {prod_id}")
-        
+                await client.put(f"{PRODUCT_SERVICE_URL}/products/{prod_id}", json={"stock_quantity": stock - qty})
+
         order_number = generate_order_number()
         total_amount = sum(item["quantity"] * item["price"] for item in items)
+
         order_id = await conn.fetchval("""
             INSERT INTO orders (order_number, customer_name, customer_phone, customer_email, delivery_address, payment_method, total_amount)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id
-        """, order_number, order_data["customer_name"], order_data["customer_phone"], order_data["customer_email"],
-            order_data["delivery_address"], order_data["payment_method"], total_amount)
-        
+        """, order_number, order_data["customer_name"], order_data["customer_phone"],
+            order_data["customer_email"], order_data["delivery_address"], order_data["payment_method"], total_amount)
+
         for item in items:
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            async with httpx.AsyncClient() as client:
                 prod_resp = await client.get(f"{PRODUCT_SERVICE_URL}/products/{item['product_id']}")
                 product_name = prod_resp.json().get("name", "Unknown")
             await conn.execute("""
                 INSERT INTO order_items (order_id, product_id, product_name, product_price, quantity)
                 VALUES ($1, $2, $3, $4, $5)
             """, order_id, item["product_id"], product_name, item["price"], item["quantity"])
-        
+
         return {"order_number": order_number, "total_amount": total_amount, "status": "new"}
 
 @app.patch("/orders/{order_number}/status")
