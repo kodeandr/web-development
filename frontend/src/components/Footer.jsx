@@ -1,4 +1,9 @@
-import './Footer.css'
 export default function Footer() {
-  return <footer className="footer">© 2025 Завод Лампочек</footer>
+  return (
+    <footer className="bg-dark text-light mt-auto py-3">
+      <div className="container text-center">
+        <small>© 2026 Интернет-магазин лампочек</small>
+      </div>
+    </footer>
+  );
 }

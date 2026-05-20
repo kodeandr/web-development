@@ -1,65 +1,94 @@
-import { useSelector, useDispatch } from 'react-redux'
-import { Link } from 'react-router-dom'
-import { updateQuantity, removeFromCart } from '../features/cart/cartSlice'
-import './Cart.css'
+import { Link } from 'react-router-dom';
+import { useCart } from '../contexts/CartContext';
 
 export default function Cart() {
-  const items = useSelector((state) => state.cart)
-  const dispatch = useDispatch()
-  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const { cart, updateQuantity, removeFromCart, totalPrice } = useCart();
 
-  if (items.length === 0) {
+  if (cart.length === 0) {
     return (
-      <div className="cart-empty">
-        <h2>Корзина пуста</h2>
-        <Link to="/">Вернуться к покупкам</Link>
+      <div className="text-center py-5">
+        <i className="bi bi-cart-x text-muted" style={{ fontSize: '4rem' }}></i>
+        <h3 className="mt-3">Корзина пуста</h3>
+        <Link to="/" className="btn btn-primary mt-3">
+          Перейти в каталог
+        </Link>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="cart-page">
-      <h2>Корзина</h2>
-      <ul className="cart-list">
-        {items.map((item) => (
-          <li key={item.id} className="cart-item">
-            <div className="cart-item__info">
-              <h3>{item.name}</h3>
-              <p>{item.price} ₽ × {item.quantity} = {(item.price * item.quantity).toFixed(2)} ₽</p>
-            </div>
-            <div className="cart-item__controls">
-              <input
-                type="number"
-                min="1"
-                max={item.stock_quantity}
-                value={item.quantity}
-                onChange={(e) => {
-                  const newQty = Number(e.target.value)
-                  if (!isNaN(newQty) && newQty >= 0) {
-                    if (newQty > item.stock_quantity) {
-                      alert(`Доступно только ${item.stock_quantity} шт.`)
-                      dispatch(updateQuantity({ id: item.id, quantity: item.stock_quantity }))
-                    } else {
-                      dispatch(updateQuantity({ id: item.id, quantity: newQty }))
-                    }
-                  }
-                }}
-                className="qty-input"
-              />
-              <button
-                className="btn-remove"
-                onClick={() => dispatch(removeFromCart(item.id))}
-              >
-                Удалить
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
-      <div className="cart-total">
-        <strong>Итого: {totalPrice.toFixed(2)} ₽</strong>
+    <div>
+      <h2 className="mb-4">Корзина</h2>
+      <div className="table-responsive">
+        <table className="table align-middle bg-white rounded shadow-sm">
+          <thead className="table-light">
+            <tr>
+              <th>Фото</th>
+              <th>Название</th>
+              <th>Цена</th>
+              <th>Количество</th>
+              <th>Сумма</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {cart.map((item) => (
+              <tr key={item.id}>
+                <td>
+                  {/* === МИНИАТЮРА === */}
+                  {item.image_url ? (
+                    <img
+                      src={item.image_url}
+                      alt={item.name}
+                      style={{ width: '60px', height: '60px', objectFit: 'cover' }}
+                      className="rounded"
+                    />
+                  ) : (
+                    <div
+                      className="d-flex align-items-center justify-content-center bg-light rounded"
+                      style={{ width: '60px', height: '60px' }}
+                    >
+                      <i className="bi bi-image text-muted" style={{ fontSize: '1.5rem' }}></i>
+                    </div>
+                  )}
+                </td>
+                <td>{item.name}</td>
+                <td>{item.price} ₽</td>
+                <td>
+                  <input
+                    type="number"
+                    className="form-control"
+                    style={{ width: '70px' }}
+                    min="1"
+                    value={item.quantity}
+                    onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 1)}
+                  />
+                </td>
+                <td>{(item.price * item.quantity).toFixed(2)} ₽</td>
+                <td>
+                  <button
+                    className="btn btn-outline-danger btn-sm"
+                    onClick={() => removeFromCart(item.id)}
+                  >
+                    <i className="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      <Link to="/checkout" className="checkout-link">Оформить заказ</Link>
+      <div className="d-flex justify-content-between align-items-center mt-3">
+        <h4>Итого: {totalPrice.toFixed(2)} ₽</h4>
+        <div>
+          <Link to="/" className="btn btn-outline-secondary me-2">
+            <i className="bi bi-arrow-left me-1"></i>Продолжить покупки
+          </Link>
+          <Link to="/checkout" className="btn btn-success">
+            <i className="bi bi-check-lg me-1"></i>Оформить заказ
+          </Link>
+        </div>
+      </div>
     </div>
-  )
+  );
 }

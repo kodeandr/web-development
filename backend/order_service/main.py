@@ -1,13 +1,12 @@
-﻿from fastapi import FastAPI, HTTPException
+﻿from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional, List
-import asyncpg
 import httpx
 from datetime import datetime
-import secrets
-from database import get_db_pool           # <-- абсолютный импорт
+from schemas import OrderCreate, OrderStatusUpdate
+from database import get_db_pool
+from auth import verify_token
 
-app = FastAPI(title="Order Service")
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,118 +16,168 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-PRODUCT_SERVICE_URL = "http://localhost:8000"
+PRODUCT_SERVICE_URL = "http://localhost:8000/products"
 
-@app.on_event("startup")
-async def startup():
-    app.state.pool = await get_db_pool()
+# Соответствие русских статусов ID в таблице order_statuses
+STATUS_MAP = {
+    "новый": 1,
+    "в обработке": 2,
+    "отправлен": 4,
+    "доставлен": 5,
+    "завершён": 5,
+    "отменён": 6
+}
 
-@app.on_event("shutdown")
-async def shutdown():
-    await app.state.pool.close()
+REVERSE_STATUS_MAP = {
+    1: "новый",
+    2: "в обработке",
+    4: "отправлен",
+    5: "доставлен",
+    6: "отменён"
+}
 
-def generate_order_number():
-    now = datetime.now().strftime("%y%m%d%H%M%S")
-    suffix = secrets.token_hex(2)
-    return f"ORD-{now}{suffix}"
+async def check_stock_and_reserve(items):
+    async with httpx.AsyncClient() as client:
+        for item in items:
+            resp = await client.get(f"{PRODUCT_SERVICE_URL}/{item.product_id}")
+            if resp.status_code != 200:
+                raise HTTPException(status_code=404, detail=f"Товар с id {item.product_id} не найден")
+            product = resp.json()
+            if product["stock_quantity"] < item.quantity:
+                raise HTTPException(status_code=400, detail=f"Недостаточно товара {product['name']}")
 
+# ========== Приватные эндпоинты (администратор) ==========
 @app.get("/orders")
-async def list_orders(status_id: Optional[int] = None, limit: int = 50):
-    async with app.state.pool.acquire() as conn:
-        query = """
-            SELECT o.order_number, o.created_at, o.customer_name, o.total_amount, os.name as status
-            FROM orders o
-            JOIN order_statuses os ON o.status_id = os.id
-        """
-        params = []
-        if status_id is not None:
-            query += " WHERE o.status_id = $1"
-            params.append(status_id)
-        query += " ORDER BY o.created_at DESC LIMIT $" + str(len(params)+1)
-        params.append(limit)
-        rows = await conn.fetch(query, *params)
-        return {"items": [dict(r) for r in rows], "total": len(rows)}
-
-@app.get("/orders/{order_number}")
-async def get_order(order_number: str):
-    async with app.state.pool.acquire() as conn:
-        row = await conn.fetchrow("""
+async def list_orders(user=Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
             SELECT o.*, os.name as status_name
             FROM orders o
             JOIN order_statuses os ON o.status_id = os.id
-            WHERE o.order_number = $1
-        """, order_number)
-        if not row:
-            raise HTTPException(404, "Order not found")
-        items = await conn.fetch("SELECT * FROM order_items WHERE order_id = $1", row["id"])
-        return {
-            "order_number": row["order_number"],
-            "status": row["status_name"],
-            "customer_name": row["customer_name"],
-            "customer_phone": row["customer_phone"],
-            "customer_email": row["customer_email"],
-            "delivery_address": row["delivery_address"],
-            "payment_method": row["payment_method"],
-            "total_amount": float(row["total_amount"]),
-            "created_at": row["created_at"].isoformat(),
-            "items": [dict(item) for item in items]
-        }
+            ORDER BY o.created_at DESC
+        """)
+    orders = []
+    for row in rows:
+        order = dict(row)
+        status_id = order["status_id"]          # числовой ID статуса
+        order.pop("status_name", None)          # убираем английское имя (если есть)
+        order["status"] = REVERSE_STATUS_MAP.get(status_id, "новый")
+        async with pool.acquire() as conn:
+            items_rows = await conn.fetch(
+                "SELECT * FROM order_items WHERE order_id = $1", order["id"]
+            )
+        order["items"] = [dict(it) for it in items_rows]
+        orders.append(order)
+    return {"items": orders}
 
+@app.get("/orders/{order_number}")
+async def get_order(order_number: str, user=Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        order = await conn.fetchrow(
+            "SELECT o.*, os.name as status_name FROM orders o JOIN order_statuses os ON o.status_id = os.id WHERE o.order_number = $1",
+            order_number
+        )
+        if not order:
+            raise HTTPException(status_code=404, detail="Заказ не найден")
+        result = dict(order)
+        status_id = result["status_id"]
+        result.pop("status_name", None)
+        result["status"] = REVERSE_STATUS_MAP.get(status_id, "новый")
+        items_rows = await conn.fetch(
+            "SELECT * FROM order_items WHERE order_id = $1", result["id"]
+        )
+        result["items"] = [dict(it) for it in items_rows]
+    return result
+
+# ========== Публичный эндпоинт (покупатель) ==========
 @app.post("/orders", status_code=201)
-async def create_order(order_data: dict):
-    required = ["customer_name", "customer_phone", "customer_email", "delivery_address", "payment_method", "items"]
-    for field in required:
-        if field not in order_data:
-            raise HTTPException(400, f"Missing field: {field}")
-    items = order_data["items"]
-    if not isinstance(items, list) or len(items) == 0:
-        raise HTTPException(400, "Items must be a non-empty list")
+async def create_order(order_data: OrderCreate):
+    await check_stock_and_reserve(order_data.items)
 
-    async with app.state.pool.acquire() as conn:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            for item in items:
-                prod_id = item["product_id"]
-                qty = item["quantity"]
-                resp = await client.get(f"{PRODUCT_SERVICE_URL}/products/{prod_id}")
-                if resp.status_code != 200:
-                    raise HTTPException(400, f"Product {prod_id} not found")
-                product = resp.json()
-                stock = product.get("stock_quantity", 0)
-                if stock < qty:
-                    raise HTTPException(400, f"Not enough stock for product {prod_id}. Available: {stock}")
-                await client.put(f"{PRODUCT_SERVICE_URL}/products/{prod_id}", json={"stock_quantity": stock - qty})
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        order_number = f"ORD-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        total = sum(item.price * item.quantity for item in order_data.items)
 
-        order_number = generate_order_number()
-        total_amount = sum(item["quantity"] * item["price"] for item in items)
+        order = await conn.fetchrow(
+            """INSERT INTO orders (order_number, status_id, customer_name, customer_phone,
+               customer_email, delivery_address, payment_method, total_amount)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *""",
+            order_number, 1,  # статус "новый"
+            order_data.customer_name,
+            order_data.customer_phone,
+            order_data.customer_email,
+            order_data.delivery_address,
+            order_data.payment_method,
+            total
+        )
 
-        order_id = await conn.fetchval("""
-            INSERT INTO orders (order_number, customer_name, customer_phone, customer_email, delivery_address, payment_method, total_amount)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING id
-        """, order_number, order_data["customer_name"], order_data["customer_phone"],
-            order_data["customer_email"], order_data["delivery_address"], order_data["payment_method"], total_amount)
-
-        for item in items:
+        for item in order_data.items:
             async with httpx.AsyncClient() as client:
-                prod_resp = await client.get(f"{PRODUCT_SERVICE_URL}/products/{item['product_id']}")
-                product_name = prod_resp.json().get("name", "Unknown")
-            await conn.execute("""
-                INSERT INTO order_items (order_id, product_id, product_name, product_price, quantity)
-                VALUES ($1, $2, $3, $4, $5)
-            """, order_id, item["product_id"], product_name, item["price"], item["quantity"])
+                resp = await client.get(f"{PRODUCT_SERVICE_URL}/{item.product_id}")
+                product = resp.json()
+            await conn.execute(
+                """INSERT INTO order_items (order_id, product_id, product_name, product_price, quantity)
+                   VALUES ($1, $2, $3, $4, $5)""",
+                order["id"],
+                item.product_id,
+                product["name"],
+                item.price,
+                item.quantity
+            )
 
-        return {"order_number": order_number, "total_amount": total_amount, "status": "new"}
+        # Возвращаем созданный заказ с человекочитаемым статусом
+        result = dict(order)
+        result["status"] = "новый"  # явно русское название
+        result["items"] = [{"product_id": it.product_id, "product_name": product["name"],
+                            "product_price": it.price, "quantity": it.quantity,
+                            "total": it.price * it.quantity} for it in order_data.items]
+    return result
 
 @app.patch("/orders/{order_number}/status")
-async def update_order_status(order_number: str, status_update: dict):
-    status_id = status_update.get("status_id")
-    if status_id is None:
-        raise HTTPException(400, "Missing status_id")
-    async with app.state.pool.acquire() as conn:
-        result = await conn.execute("""
-            UPDATE orders SET status_id = $1, updated_at = CURRENT_TIMESTAMP
-            WHERE order_number = $2
-        """, status_id, order_number)
-        if result == "UPDATE 0":
-            raise HTTPException(404, "Order not found")
-        return {"message": "Status updated"}
+async def update_order_status(
+    order_number: str,
+    status_update: OrderStatusUpdate,
+    user=Depends(verify_token)
+):
+    allowed_statuses = ["новый", "в обработке", "отправлен", "доставлен", "отменён"]
+    if status_update.status not in allowed_statuses:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Недопустимый статус. Разрешены: {', '.join(allowed_statuses)}"
+        )
+
+    new_status_id = STATUS_MAP.get(status_update.status)
+    if new_status_id is None:
+        raise HTTPException(status_code=400, detail="Неизвестный статус")
+
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        order = await conn.fetchrow(
+            "SELECT * FROM orders WHERE order_number = $1", order_number
+        )
+        if not order:
+            raise HTTPException(status_code=404, detail="Заказ не найден")
+
+        updated = await conn.fetchrow(
+            "UPDATE orders SET status_id = $1 WHERE order_number = $2 RETURNING *",
+            new_status_id, order_number
+        )
+
+    # Формируем ответ с русским статусом
+    result = dict(updated)
+    result["status"] = REVERSE_STATUS_MAP.get(new_status_id, status_update.status)
+
+    # Добавляем items
+    async with pool.acquire() as conn:
+        items_rows = await conn.fetch(
+            "SELECT * FROM order_items WHERE order_id = $1", result["id"]
+        )
+    result["items"] = [dict(it) for it in items_rows]
+    return result
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="127.0.0.1", port=8001, reload=True)

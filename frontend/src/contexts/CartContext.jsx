@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
-const CartContext = createContext();
+export const CartContext = createContext();
 
 export const useCart = () => useContext(CartContext);
 
@@ -14,7 +14,9 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (product, quantity = 1) => {
+  // Принимает ОДИН аргумент – продукт с полями id, name, price, image_url, quantity
+  const addToCart = (product) => {
+    const quantity = product.quantity || 1;
     setCartItems(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
@@ -50,7 +52,16 @@ export const CartProvider = ({ children }) => {
 
   return (
     <CartContext.Provider
-      value={{ cartItems, addToCart, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice }}
+      value={{
+        cart: cartItems,
+        cartItems,
+        addToCart,
+        removeFromCart,
+        updateQuantity,
+        clearCart,
+        totalItems,
+        totalPrice
+      }}
     >
       {children}
     </CartContext.Provider>
