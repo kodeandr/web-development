@@ -5,37 +5,6 @@
 Frontend: React + Bootstrap 5.3.  
 Backend: FastAPI (Python) для сервисов товаров и заказов, Express (Node.js) для сервиса аутентификации.
 
-## Структура проекта
-├── auth_service/ # Сервис аутентификации (Node.js + Express)
-│ ├── server.js
-│ └── package.json
-├── backend/
-│ ├── product_service/ # Сервис товаров (FastAPI)
-│ │ ├── main.py
-│ │ ├── auth.py
-│ │ ├── database.py
-│ │ ├── schemas.py
-│ │ └── requirements.txt
-│ └── order_service/ # Сервис заказов (FastAPI)
-│ ├── main.py
-│ ├── auth.py
-│ ├── database.py
-│ ├── schemas.py
-│ └── requirements.txt
-├── frontend/ # React-приложение (Vite + Bootstrap 5.3)
-│ ├── src/
-│ │ ├── pages/
-│ │ ├── contexts/
-│ │ ├── api/
-│ │ └── ...
-│ ├── index.html
-│ ├── package.json
-│ └── vite.config.js
-├── uploads/ # Загруженные изображения (опционально)
-└── README.md
-
-text
-
 ## Требования
 
 - **Node.js** (версия 16+)
