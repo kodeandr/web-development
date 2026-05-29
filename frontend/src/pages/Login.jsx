@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import styles from './Login.module.css';
 
 const AUTH_URL = 'http://localhost:3001';
 
@@ -30,8 +31,8 @@ export default function Login() {
   };
 
   return (
-    <div className="d-flex align-items-center justify-content-center min-vh-100 bg-light">
-      <div className="card shadow" style={{ width: '100%', maxWidth: 400 }}>
+    <div className={`d-flex align-items-center justify-content-center min-vh-100 ${styles.loginContainer}`}>
+      <div className={`card shadow-sm ${styles.loginCard}`}>
         <div className="card-body p-4">
           <h3 className="text-center mb-4">Вход для администратора</h3>
           {error && <div className="alert alert-danger py-2">{error}</div>}

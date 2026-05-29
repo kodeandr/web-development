@@ -1,4 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
+import styles from './Confirmation.module.css';
 
 export default function Confirmation() {
   const { orderNumber } = useParams();
@@ -13,8 +14,8 @@ export default function Confirmation() {
 
   return (
     <div className="d-flex justify-content-center mt-5">
-      <div className="card shadow-sm text-center p-5" style={{ maxWidth: '500px' }}>
-        <i className="bi bi-check-circle-fill text-success" style={{ fontSize: '4rem' }}></i>
+      <div className={`card shadow-sm text-center ${styles.card}`}>
+        <i className={`bi bi-check-circle-fill ${styles.icon}`}></i>
         <h2 className="mt-3">Заказ оформлен!</h2>
         <p className="text-muted">Номер вашего заказа:</p>
         <h3 className="text-primary">{orderNumber}</h3>

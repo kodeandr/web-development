@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import styles from './ProductDetails.module.css';
 
 const API_URL = 'http://localhost:8000';
 
@@ -55,25 +56,20 @@ export default function ProductDetails() {
 
   return (
     <div>
-      <Link to="/" className="btn btn-outline-secondary mb-3">
+      <Link to="/" className={`btn btn-outline-secondary mb-3 ${styles.backBtn}`}>
         <i className="bi bi-arrow-left me-1"></i>Назад к каталогу
       </Link>
       <div className="card shadow-sm">
         <div className="row g-0">
           <div className="col-md-5">
-            {/* === ИЗОБРАЖЕНИЕ === */}
             {product.image_url ? (
               <img
                 src={product.image_url}
-                className="img-fluid rounded-start"
+                className={`img-fluid rounded-start ${styles.image}`}
                 alt={product.name}
-                style={{ height: '500px', objectFit: 'cover', width: '100%' }}
               />
             ) : (
-              <div
-                className="d-flex align-items-center justify-content-center bg-light rounded-start"
-                style={{ height: '500px', width: '100%' }}
-              >
+              <div className={`${styles.placeholder} rounded-start`}>
                 <i className="bi bi-image text-muted" style={{ fontSize: '4rem' }}></i>
               </div>
             )}
@@ -92,7 +88,7 @@ export default function ProductDetails() {
                 <div className="col-auto">
                   <label className="form-label mb-0">Количество:</label>
                 </div>
-                <div className="col-auto" style={{ width: '80px' }}>
+                <div className="col-auto">
                   <input
                     type="number"
                     className="form-control"
@@ -100,6 +96,7 @@ export default function ProductDetails() {
                     max={product.stock_quantity}
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
+                    style={{ width: '80px' }}
                   />
                 </div>
                 <div className="col-auto">

@@ -1,9 +1,10 @@
-/* Общий фон */
+/* Глобальные стили приложения */
 body {
   background-color: #f4f6f9;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  margin: 0;
 }
 
 main {
@@ -12,80 +13,4 @@ main {
 
 footer {
   flex-shrink: 0;
-}
-
-/* Таблицы */
-.table {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-}
-
-/* Кнопки действий в таблице */
-.table .btn-outline-primary:hover i,
-.table .btn-outline-danger:hover i {
-  color: white;
-}
-.table .btn-outline-primary:hover {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
-}
-.table .btn-outline-danger:hover {
-  background-color: #dc3545;
-  border-color: #dc3545;
-}
-
-/* Навигационные вкладки админки */
-.nav-tabs .nav-link {
-  border: none;
-  color: #6c757d;
-  font-weight: 500;
-  padding: 0.75rem 1.25rem;
-  transition: 0.2s;
-}
-.nav-tabs .nav-link:hover {
-  color: #495057;
-  background-color: rgba(0, 0, 0, 0.03);
-}
-.nav-tabs .nav-link.active {
-  font-weight: 600;
-  color: #0d6efd;
-  background-color: #e7f1ff;
-  border-radius: 8px;
-}
-
-/* Модальное окно */
-.modal.show {
-  display: block;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-.modal-dialog {
-  margin-top: 10vh;
-}
-
-/* Карточки товаров (каталог) */
-.card {
-  border: none;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s;
-}
-.card:hover {
-  transform: translateY(-2px);
-}
-.card-img-top {
-  height: 200px;
-  object-fit: cover;
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
-}
-.card-body {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Формы в виде карточек */
-form.card {
-  padding: 1.5rem;
 }

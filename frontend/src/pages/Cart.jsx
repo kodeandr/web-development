@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import styles from './Cart.module.css';
 
 export default function Cart() {
   const { cart, updateQuantity, removeFromCart, totalPrice } = useCart();
@@ -7,7 +8,7 @@ export default function Cart() {
   if (cart.length === 0) {
     return (
       <div className="text-center py-5">
-        <i className="bi bi-cart-x text-muted" style={{ fontSize: '4rem' }}></i>
+        <i className={`bi bi-cart-x text-muted ${styles.emptyIcon}`}></i>
         <h3 className="mt-3">Корзина пуста</h3>
         <Link to="/" className="btn btn-primary mt-3">
           Перейти в каталог
@@ -20,7 +21,7 @@ export default function Cart() {
     <div>
       <h2 className="mb-4">Корзина</h2>
       <div className="table-responsive">
-        <table className="table align-middle bg-white rounded shadow-sm">
+        <table className={`table align-middle ${styles.table}`}>
           <thead className="table-light">
             <tr>
               <th>Фото</th>
@@ -35,19 +36,14 @@ export default function Cart() {
             {cart.map((item) => (
               <tr key={item.id}>
                 <td>
-                  {/* === МИНИАТЮРА === */}
                   {item.image_url ? (
                     <img
                       src={item.image_url}
                       alt={item.name}
-                      style={{ width: '60px', height: '60px', objectFit: 'cover' }}
-                      className="rounded"
+                      className={styles.thumbnail}
                     />
                   ) : (
-                    <div
-                      className="d-flex align-items-center justify-content-center bg-light rounded"
-                      style={{ width: '60px', height: '60px' }}
-                    >
+                    <div className={styles.thumbPlaceholder}>
                       <i className="bi bi-image text-muted" style={{ fontSize: '1.5rem' }}></i>
                     </div>
                   )}
@@ -57,8 +53,7 @@ export default function Cart() {
                 <td>
                   <input
                     type="number"
-                    className="form-control"
-                    style={{ width: '70px' }}
+                    className={`form-control ${styles.quantityInput}`}
                     min="1"
                     value={item.quantity}
                     onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 1)}

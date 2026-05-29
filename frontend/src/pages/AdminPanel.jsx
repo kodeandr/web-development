@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import styles from './AdminPanel.module.css';
 
 const PRODUCTS_URL = 'http://localhost:8000/products';
 const ORDERS_URL = 'http://localhost:8001/orders';
@@ -171,9 +172,9 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className="bg-light min-vh-100">
+    <div className={styles.adminBody}>
       {/* Навигация */}
-      <nav className="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm mb-4">
+      <nav className={`navbar navbar-expand-lg navbar-dark bg-dark shadow-sm ${styles.navbar}`}>
         <div className="container-fluid">
           <span className="navbar-brand mb-0 h1">
             <i className="bi bi-lightning-charge-fill me-2"></i>
@@ -191,7 +192,7 @@ export default function AdminPanel() {
         <ul className="nav nav-tabs mb-4">
           <li className="nav-item">
             <button
-              className={`nav-link ${activeTab === 'products' ? 'active' : ''}`}
+              className={`nav-link ${activeTab === 'products' ? styles.activeTab : ''}`}
               onClick={() => setActiveTab('products')}
             >
               <i className="bi bi-box-seam me-1"></i> Товары
@@ -199,7 +200,7 @@ export default function AdminPanel() {
           </li>
           <li className="nav-item">
             <button
-              className={`nav-link ${activeTab === 'orders' ? 'active' : ''}`}
+              className={`nav-link ${activeTab === 'orders' ? styles.activeTab : ''}`}
               onClick={() => setActiveTab('orders')}
             >
               <i className="bi bi-truck me-1"></i> Заказы
@@ -215,7 +216,7 @@ export default function AdminPanel() {
               Добавить товар
             </button>
             <div className="table-responsive">
-              <table className="table table-hover align-middle bg-white rounded shadow-sm">
+              <table className={`table table-hover align-middle ${styles.table}`}>
                 <thead className="table-light">
                   <tr>
                     <th>ID</th>
@@ -234,14 +235,14 @@ export default function AdminPanel() {
                       <td>{p.stock_quantity}</td>
                       <td className="text-center">
                         <button
-                          className="btn btn-outline-primary btn-sm me-1"
+                          className={`btn btn-outline-primary btn-sm me-1 ${styles.actionBtn}`}
                           title="Редактировать"
                           onClick={() => openEditModal(p)}
                         >
                           <i className="bi bi-pencil"></i>
                         </button>
                         <button
-                          className="btn btn-outline-danger btn-sm"
+                          className={`btn btn-outline-danger btn-sm ${styles.actionBtn}`}
                           title="Удалить"
                           onClick={() => handleDelete(p.id)}
                         >
@@ -256,7 +257,7 @@ export default function AdminPanel() {
           </>
         ) : (
           <div className="table-responsive">
-            <table className="table table-hover align-middle bg-white rounded shadow-sm">
+            <table className={`table table-hover align-middle ${styles.table}`}>
               <thead className="table-light">
                 <tr>
                   <th>Номер заказа</th>
@@ -300,8 +301,8 @@ export default function AdminPanel() {
 
       {/* Модальное окно товара */}
       {showModal && (
-        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
+        <div className={`modal show d-block ${styles.modalOverlay}`} tabIndex="-1">
+          <div className={`modal-dialog ${styles.modalDialog}`}>
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">

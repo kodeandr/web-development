@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import styles from './Checkout.module.css';
 
 const ORDERS_URL = 'http://localhost:8001/orders';
 
@@ -74,7 +75,7 @@ export default function Checkout() {
       {error && <div className="alert alert-danger">{error}</div>}
       <div className="row">
         <div className="col-md-8">
-          <div className="card shadow-sm p-4 mb-4">
+          <div className={`card shadow-sm ${styles.formCard} mb-4`}>
             <form onSubmit={handleSubmit}>
               <div className="mb-3">
                 <label className="form-label">Имя</label>
@@ -143,7 +144,7 @@ export default function Checkout() {
           </div>
         </div>
         <div className="col-md-4">
-          <div className="card shadow-sm p-3">
+          <div className={`card shadow-sm ${styles.summaryCard}`}>
             <h5>Ваш заказ</h5>
             <ul className="list-group list-group-flush">
               {cart.map((item) => (
