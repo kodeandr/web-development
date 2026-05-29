@@ -1,0 +1,54 @@
+.adminBody {
+  background-color: #f4f6f9;
+  min-height: 100vh;
+}
+
+.navbar {
+  margin-bottom: 24px;
+}
+
+.tabButton {
+  border: none;
+  color: #6c757d;
+  font-weight: 500;
+  padding: 0.75rem 1.25rem;
+  transition: 0.2s;
+}
+.tabButton:hover {
+  color: #495057;
+  background-color: rgba(0, 0, 0, 0.03);
+}
+.activeTab {
+  font-weight: 600;
+  color: #0d6efd;
+  background-color: #e7f1ff;
+  border-radius: 8px;
+}
+
+.table {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* кнопки действий в таблице */
+.actionBtn:hover i {
+  color: white;
+}
+.primaryBtn:hover {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+.dangerBtn:hover {
+  background-color: #dc3545;
+  border-color: #dc3545;
+}
+
+.modalOverlay {
+  display: block;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.modalDialog {
+  margin-top: 10vh;
+}

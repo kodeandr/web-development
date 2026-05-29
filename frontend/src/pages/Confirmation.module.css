@@ -1,0 +1,11 @@
+.card {
+  max-width: 500px;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.icon {
+  font-size: 4rem;
+  color: #198754;
+}

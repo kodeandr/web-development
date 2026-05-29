@@ -1,0 +1,18 @@
+.backBtn {
+  margin-bottom: 1rem;
+}
+
+.image {
+  height: 500px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.placeholder {
+  height: 500px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+}
