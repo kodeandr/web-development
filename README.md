@@ -1,112 +1,153 @@
-Учебный проект по курсу «Веб-разработка».  
-Реализована панель администратора с аутентификацией через JWT, управлением товарами и заказами.  
-Frontend: React + Bootstrap 5.3.  
-Backend: FastAPI (Python) для сервисов товаров и заказов, Express (Node.js) для сервиса аутентификации.
+# Интернет-магазин автомобильных лампочек (микросервисная архитектура)
+
+Учебный проект по курсу «Веб-разработка».
+Реализована полноценная панель администратора с JWT‑аутентификацией,
+управлением товарами и заказами, а также публичный магазин с отслеживанием заказов.
+
+**Frontend:** React + Vite + Bootstrap 5.3
+**Backend:** FastAPI (Python) + SQLite для сервисов товаров и заказов, Express (Node.js) для сервиса аутентификации.
+
+---
 
 ## Требования
+- Node.js (версия 16+)
+- Python (версия 3.10+)
+- Дополнительные базы данных или PostgreSQL не требуются – всё работает на встроенном SQLite.
 
-- **Node.js** (версия 16+)
-- **Python** (версия 3.10+)
-- **PostgreSQL** (версия 14+)
-- База данных `lamp_shop` с таблицами согласно схеме (см. файлы `database.py`)
+---
+
+## Структура проекта
+
+├── auth_service/          # Сервис аутентификации (Node.js + Express)
+│   ├── server.js
+│   └── package.json
+├── backend/
+│   ├── product_service/   # Сервис товаров (FastAPI + SQLite)
+│   │   ├── main.py
+│   │   ├── services.py
+│   │   ├── database.py
+│   │   ├── schemas.py
+│   │   ├── auth.py
+│   │   ├── seed_products.py      # скрипт для наполнения базы 20 товарами
+│   │   ├── fix_categories.py     # скрипт для простановки категорий
+│   │   └── requirements.txt
+│   └── order_service/     # Сервис заказов (FastAPI + SQLite)
+│       ├── main.py
+│       ├── services.py
+│       ├── database.py
+│       ├── schemas.py
+│       ├── auth.py
+│       └── requirements.txt
+├── frontend/              # React-приложение (Vite)
+│   ├── src/
+│   │   ├── pages/         # страницы (Catalog, Cart, AdminPanel, OrderTracking…)
+│   │   ├── contexts/      # контекст корзины
+│   │   ├── components/    # Header, Footer
+│   │   └── …
+│   ├── index.html
+│   └── package.json
+├── .gitignore
+└── README.md
+
+---
 
 ## Установка и запуск
 
-### 1. Клонирование репозитория
+1. Клонирование репозитория
+   git clone https://github.com/kodeandr/web-development.git
+   cd web-development
 
-git clone https://github.com/kodeandr/web-development.git
-cd web-development
-2. Настройка базы данных
-Убедитесь, что PostgreSQL запущен, и база lamp_shop существует.
-Пользователь: postgres, пароль: 123 (при необходимости измените в database.py сервисов).
+2. Сервис аутентификации (порт 3001)
+   cd auth_service
+   npm install
+   npm start
 
-3. Сервис аутентификации (порт 3001)
-bash
-cd auth_service
-npm install
-npm start
-4. Сервис товаров (порт 8000)
-bash
-cd backend/product_service
-pip install -r requirements.txt
-python main.py
-5. Сервис заказов (порт 8001)
-bash
-cd backend/order_service
-pip install -r requirements.txt
-python main.py
-6. Фронтенд (порт 5173)
-bash
-cd frontend
-npm install
-npm run dev
-Откройте браузер и перейдите по адресу http://localhost:5173.
+3. Сервис товаров (порт 8000)
+   cd backend/product_service
+   pip install -r requirements.txt
+   python main.py
+   При первом запуске автоматически создастся файл products.db с таблицами и одной тестовой лампой.
 
-Учётные данные администратора (по умолчанию)
-Логин: admin
+4. Сервис заказов (порт 8001)
+   cd backend/order_service
+   pip install -r requirements.txt
+   python main.py
+   Аналогично создастся orders.db со статусами заказов.
 
-Пароль: admin123
+5. Фронтенд (порт 5173)
+   cd frontend
+   npm install
+   npm run dev
+   Откройте браузер и перейдите по адресу http://localhost:5173.
 
-Основные сценарии использования
+---
+
+## Учётные данные администратора (по умолчанию)
+- Логин: admin
+- Пароль: admin123
+
+---
+
+## Основные сценарии использования
+
 Покупатель (без авторизации)
-Просмотр каталога товаров
-
-Фильтрация по категории и цене
-
-Добавление товаров в корзину
-
-Оформление заказа (POST /orders публичный)
+- Просмотр каталога товаров с фильтрацией по категории и цене.
+- Добавление товаров в корзину с выбором количества.
+- Оформление заказа с контактными данными.
+- Отслеживание заказа по номеру (страница /tracking).
 
 Администратор (требуется вход)
-Перейдите на /login и войдите.
-
-После успешного входа открывается панель /admin с вкладками «Товары» и «Заказы».
-
-Товары:
-
-Просмотр списка товаров (GET /products с JWT)
-
-Добавление нового товара (POST /products)
-
-Редактирование товара (PUT /products/:id)
-
-Удаление товара (DELETE /products/:id)
-
-Заказы:
-
-Просмотр списка заказов (GET /orders)
-
-Изменение статуса заказа (PATCH /orders/:order_number/status)
-
-Выход: кнопка «Выйти» удаляет JWT и перенаправляет на страницу входа.
+1. Перейдите на /login и войдите под учётной записью admin / admin123.
+2. После входа откроется панель /admin с вкладками «Товары» и «Заказы».
+3. Товары:
+   - Просмотр списка (GET /products с JWT)
+   - Добавление нового товара (POST /products)
+   - Редактирование (PUT /products/:id)
+   - Удаление (DELETE /products/:id)
+4. Заказы:
+   - Просмотр списка с детальной информацией о клиенте, адресе, товарах, сумме.
+   - Изменение статуса заказа через выпадающий список (новый → в обработке → отправлен → доставлен / отменён)
+5. Выход: кнопка «Выйти» удаляет JWT и перенаправляет на страницу входа.
 
 Все защищённые эндпоинты требуют заголовок Authorization: Bearer <JWT>.
 При отсутствии или невалидном токене возвращается 401 Unauthorized.
 
-API Endpoints
-auth_service (Express)
-POST /login – аутентификация, возвращает JWT.
+---
 
-POST /register – регистрация нового администратора (опционально).
+## API Endpoints
 
-product_service (FastAPI)
-GET /products – список товаров (публичный)
+auth_service (Express, порт 3001)
+- POST /login – аутентификация, возвращает JWT.
+- POST /register – регистрация нового администратора (опционально).
 
-GET /products/{id} – детали товара (публичный)
+product_service (FastAPI, порт 8000)
+- GET /products – список товаров (публичный)
+- GET /products/{id} – детали товара (публичный)
+- POST /products – создать товар (JWT)
+- PUT /products/{id} – обновить товар (JWT)
+- DELETE /products/{id} – удалить товар (JWT)
+- PATCH /products/{id}/stock?quantity_change=-2 – изменить остаток (JWT)
+- GET /categories – список категорий (публичный)
 
-POST /products – создать товар (JWT)
+order_service (FastAPI, порт 8001)
+- GET /orders – список всех заказов (JWT)
+- GET /orders/{order_number} – детали заказа (JWT)
+- POST /orders – создать заказ (публичный)
+- PATCH /orders/{order_number}/status – сменить статус (JWT)
+- GET /track/{order_number} – отследить заказ (публичный)
 
-PUT /products/{id} – обновить товар (JWT)
+---
 
-DELETE /products/{id} – удалить товар (JWT)
+## Дополнительные возможности
+- Наполнение базы товарами:
+  В папке backend/product_service выполните python seed_products.py – в базу добавятся 20 автомобильных ламп с реалистичными названиями и ценами.
+- Исправление категорий:
+  Если категории у существующих товаров не проставлены, выполните python fix_categories.py.
+- Изолированные стили:
+  Все компоненты используют CSS Modules (.module.css), глобальные стили сведены к минимуму.
+- Адаптивная вёрстка:
+  Таблицы и страницы корректно отображаются на мобильных устройствах благодаря Bootstrap и адаптивным обёрткам.
 
-GET /categories – список категорий (публичный)
+---
 
-order_service (FastAPI)
-GET /orders – список заказов (JWT)
-
-GET /orders/{order_number} – детали заказа (JWT)
-
-POST /orders – создать заказ (публичный)
-
-PATCH /orders/{order_number}/status – сменить статус (JWT)
+© 2026 Интернет-магазин лампочек
