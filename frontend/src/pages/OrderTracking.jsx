@@ -41,7 +41,7 @@ export default function OrderTracking() {
           <input
             type="text"
             className="form-control"
-            placeholder="Например, ORD-20240520123000"
+            placeholder="Например, ORD-0601071901"
             value={orderNumber}
             onChange={(e) => setOrderNumber(e.target.value)}
             required

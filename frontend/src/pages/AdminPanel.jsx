@@ -285,7 +285,7 @@ export default function AdminPanel() {
                     </td>
                     <td className={styles.colItems}>
                       {order.items?.map((it, idx) => (
-                        <div key={idx}>{it.product_name} × {it.quantity}</div>
+                      <div key={idx}>{it.name} × {it.quantity}</div>
                       ))}
                     </td>
                     <td className={styles.colStatus}>{statusBadge(order.status)}</td>
