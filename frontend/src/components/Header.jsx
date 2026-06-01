@@ -32,6 +32,14 @@ export default function Header() {
             </li>
             <li className="nav-item">
               <Link
+                className={`nav-link ${location.pathname === '/tracking' ? 'active' : ''}`}
+                to="/tracking"
+              >
+                <i className="bi bi-search me-1"></i>Отследить заказ
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link
                 className={`nav-link ${location.pathname === '/cart' ? 'active' : ''}`}
                 to="/cart"
               >

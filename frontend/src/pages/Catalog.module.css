@@ -24,6 +24,10 @@
   background-color: #f8f9fa;
 }
 
+.placeholderIcon {
+  font-size: 3rem;
+}
+
 /* Цена */
 .price {
   font-size: 1.5rem;

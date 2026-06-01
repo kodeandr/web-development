@@ -8,6 +8,7 @@ import Checkout from './pages/Checkout';
 import Confirmation from './pages/Confirmation';
 import Login from './pages/Login';
 import AdminPanel from './pages/AdminPanel';
+import OrderTracking from './pages/OrderTracking';
 import { CartProvider } from './contexts/CartContext';
 import './App.css';
 
@@ -20,7 +21,7 @@ export default function App() {
   return (
     <CartProvider>
       <Header />
-      <main className="container">
+      <main className="container d-flex flex-column flex-grow-1">
         <Routes>
           <Route path="/" element={<Catalog />} />
           <Route path="/product/:id" element={<ProductDetails />} />
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/confirmation/:orderNumber?" element={<Confirmation />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/tracking" element={<OrderTracking />} />
           <Route
             path="/admin"
             element={

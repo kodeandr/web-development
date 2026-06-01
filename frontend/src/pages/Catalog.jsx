@@ -144,7 +144,7 @@ export default function Catalog() {
                   />
                 ) : (
                   <div className={`card-img-top ${styles.placeholder}`}>
-                    <i className="bi bi-image text-muted" style={{ fontSize: '3rem' }}></i>
+                    <i className={`bi bi-image text-muted ${styles.placeholderIcon}`}></i>
                   </div>
                 )}
                 <div className="card-body d-flex flex-column">

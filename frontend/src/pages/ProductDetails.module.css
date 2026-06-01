@@ -16,3 +16,11 @@
   justify-content: center;
   background-color: #f8f9fa;
 }
+
+.quantityInput {
+  width: 80px;
+}
+
+.placeholderIcon {
+  font-size: 4rem;
+}

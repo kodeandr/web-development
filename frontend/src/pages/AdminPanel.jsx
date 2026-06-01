@@ -172,7 +172,7 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className={styles.adminBody}>
+    <div className="bg-light d-flex flex-column flex-grow-1">
       {/* Навигация */}
       <nav className={`navbar navbar-expand-lg navbar-dark bg-dark shadow-sm ${styles.navbar}`}>
         <div className="container-fluid">
@@ -257,28 +257,41 @@ export default function AdminPanel() {
           </>
         ) : (
           <div className="table-responsive">
-            <table className={`table table-hover align-middle ${styles.table}`}>
+            <table className={`table table-hover align-middle ${styles.table} ${styles.ordersTable}`}>
               <thead className="table-light">
                 <tr>
-                  <th>Номер заказа</th>
-                  <th>Товары</th>
-                  <th>Статус</th>
-                  <th>Дата</th>
-                  <th>Изменить статус</th>
+                  <th className={styles.colOrderNumber}>Номер заказа</th>
+                  <th className={styles.colClient}>Клиент</th>
+                  <th className={styles.colContacts}>Контакты / Адрес</th>
+                  <th className={styles.colItems}>Товары</th>
+                  <th className={styles.colStatus}>Статус</th>
+                  <th className={styles.colAmount}>Сумма</th>
+                  <th className={styles.colDate}>Дата</th>
+                  <th className={styles.colAction}>Действие</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.map((order) => (
                   <tr key={order.order_number}>
-                    <td><strong>{order.order_number}</strong></td>
-                    <td>
+                    <td className={styles.colOrderNumber}><strong>{order.order_number}</strong></td>
+                    <td className={styles.colClient}>
+                      <div>{order.customer_name}</div>
+                      <small className="text-muted">{order.customer_phone}</small>
+                    </td>
+                    <td className={styles.colContacts}>
+                      <div>{order.customer_email}</div>
+                      <small className="text-muted">{order.delivery_address}</small>
+                      <div><small>{order.payment_method}</small></div>
+                    </td>
+                    <td className={styles.colItems}>
                       {order.items?.map((it, idx) => (
                         <div key={idx}>{it.product_name} × {it.quantity}</div>
                       ))}
                     </td>
-                    <td>{statusBadge(order.status)}</td>
-                    <td>{new Date(order.created_at).toLocaleString()}</td>
-                    <td>
+                    <td className={styles.colStatus}>{statusBadge(order.status)}</td>
+                    <td className={styles.colAmount}>{order.total_amount} ₽</td>
+                    <td className={styles.colDate}>{new Date(order.created_at).toLocaleString()}</td>
+                    <td className={styles.colAction}>
                       <select
                         className="form-select form-select-sm"
                         value={order.status}

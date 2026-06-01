@@ -1,23 +1,15 @@
 .adminBody {
   background-color: #f4f6f9;
-  min-height: 100vh;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .navbar {
   margin-bottom: 24px;
 }
 
-.tabButton {
-  border: none;
-  color: #6c757d;
-  font-weight: 500;
-  padding: 0.75rem 1.25rem;
-  transition: 0.2s;
-}
-.tabButton:hover {
-  color: #495057;
-  background-color: rgba(0, 0, 0, 0.03);
-}
+/* Вкладки */
 .activeTab {
   font-weight: 600;
   color: #0d6efd;
@@ -25,6 +17,7 @@
   border-radius: 8px;
 }
 
+/* Таблицы */
 .table {
   background: white;
   border-radius: 12px;
@@ -32,23 +25,49 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
-/* кнопки действий в таблице */
+/* Кнопки действий в таблице */
 .actionBtn:hover i {
   color: white;
 }
-.primaryBtn:hover {
+.actionBtn:hover {
   background-color: #0d6efd;
   border-color: #0d6efd;
 }
-.dangerBtn:hover {
-  background-color: #dc3545;
-  border-color: #dc3545;
-}
 
+/* Модальное окно */
 .modalOverlay {
   display: block;
   background-color: rgba(0, 0, 0, 0.5);
 }
 .modalDialog {
   margin-top: 10vh;
+}
+
+/* === Адаптивная ширина таблицы заказов === */
+/* table-layout: auto по умолчанию, ширины не фиксируем жестко */
+.colOrderNumber {
+  min-width: 120px;
+}
+.colClient {
+  min-width: 140px;
+}
+.colContacts {
+  min-width: 160px;
+}
+.colItems {
+  min-width: 180px;
+}
+.colStatus {
+  min-width: 150px;
+  white-space: nowrap;
+}
+.colAmount {
+  min-width: 90px;
+}
+.colDate {
+  min-width: 140px;
+  white-space: nowrap;
+}
+.colAction {
+  min-width: 130px;
 }

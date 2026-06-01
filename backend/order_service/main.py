@@ -60,8 +60,8 @@ async def list_orders(user=Depends(verify_token)):
     orders = []
     for row in rows:
         order = dict(row)
-        status_id = order["status_id"]          # числовой ID статуса
-        order.pop("status_name", None)          # убираем английское имя (если есть)
+        status_id = order["status_id"]
+        order.pop("status_name", None)
         order["status"] = REVERSE_STATUS_MAP.get(status_id, "новый")
         async with pool.acquire() as conn:
             items_rows = await conn.fetch(
@@ -94,12 +94,29 @@ async def get_order(order_number: str, user=Depends(verify_token)):
 # ========== Публичный эндпоинт (покупатель) ==========
 @app.post("/orders", status_code=201)
 async def create_order(order_data: OrderCreate):
-    await check_stock_and_reserve(order_data.items)
+    # Шаг 1: проверяем наличие и получаем актуальные цены / названия из product_service
+    items_with_product = []
+    async with httpx.AsyncClient() as client:
+        for item in order_data.items:
+            resp = await client.get(f"{PRODUCT_SERVICE_URL}/{item.product_id}")
+            if resp.status_code != 200:
+                raise HTTPException(status_code=404, detail=f"Товар с id {item.product_id} не найден")
+            product = resp.json()
+            if product["stock_quantity"] < item.quantity:
+                raise HTTPException(status_code=400, detail=f"Недостаточно товара {product['name']}")
+            items_with_product.append({
+                "product_id": item.product_id,
+                "quantity": item.quantity,
+                "price": float(product["price"]),
+                "name": product["name"]
+            })
+
+    # Вычисляем общую сумму на основе реальных цен
+    total = sum(it["price"] * it["quantity"] for it in items_with_product)
 
     pool = await get_db_pool()
     async with pool.acquire() as conn:
         order_number = f"ORD-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        total = sum(item.price * item.quantity for item in order_data.items)
 
         order = await conn.fetchrow(
             """INSERT INTO orders (order_number, status_id, customer_name, customer_phone,
@@ -114,26 +131,30 @@ async def create_order(order_data: OrderCreate):
             total
         )
 
-        for item in order_data.items:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(f"{PRODUCT_SERVICE_URL}/{item.product_id}")
-                product = resp.json()
+        for it in items_with_product:
             await conn.execute(
                 """INSERT INTO order_items (order_id, product_id, product_name, product_price, quantity)
                    VALUES ($1, $2, $3, $4, $5)""",
                 order["id"],
-                item.product_id,
-                product["name"],
-                item.price,
-                item.quantity
+                it["product_id"],
+                it["name"],
+                it["price"],
+                it["quantity"]
             )
 
-        # Возвращаем созданный заказ с человекочитаемым статусом
-        result = dict(order)
-        result["status"] = "новый"  # явно русское название
-        result["items"] = [{"product_id": it.product_id, "product_name": product["name"],
-                            "product_price": it.price, "quantity": it.quantity,
-                            "total": it.price * it.quantity} for it in order_data.items]
+    # Ответ собираем на основе реальных данных
+    result = dict(order)
+    result["status"] = "новый"
+    result["items"] = [
+        {
+            "product_id": it["product_id"],
+            "product_name": it["name"],
+            "product_price": it["price"],
+            "quantity": it["quantity"],
+            "total": it["price"] * it["quantity"]
+        }
+        for it in items_with_product
+    ]
     return result
 
 @app.patch("/orders/{order_number}/status")
@@ -166,16 +187,54 @@ async def update_order_status(
             new_status_id, order_number
         )
 
-    # Формируем ответ с русским статусом
     result = dict(updated)
     result["status"] = REVERSE_STATUS_MAP.get(new_status_id, status_update.status)
 
-    # Добавляем items
     async with pool.acquire() as conn:
         items_rows = await conn.fetch(
             "SELECT * FROM order_items WHERE order_id = $1", result["id"]
         )
     result["items"] = [dict(it) for it in items_rows]
+    return result
+
+# ========== Публичный эндпоинт для отслеживания заказа (без JWT) ==========
+@app.get("/track/{order_number}")
+async def track_order(order_number: str):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        order = await conn.fetchrow(
+            """SELECT o.order_number, o.status_id, o.created_at, o.total_amount
+               FROM orders o
+               WHERE o.order_number = $1""",
+            order_number
+        )
+        if not order:
+            raise HTTPException(status_code=404, detail="Заказ не найден")
+
+        items_rows = await conn.fetch(
+            """SELECT product_name, quantity, product_price
+               FROM order_items
+               WHERE order_id = (SELECT id FROM orders WHERE order_number = $1)""",
+            order_number
+        )
+
+    # Преобразуем status_id в русское название через словарь
+    status_name = REVERSE_STATUS_MAP.get(order["status_id"], "неизвестно")
+
+    result = {
+        "order_number": order["order_number"],
+        "status": status_name,
+        "created_at": order["created_at"].isoformat(),
+        "total_amount": float(order["total_amount"]),
+        "items": [
+            {
+                "name": it["product_name"],
+                "quantity": it["quantity"],
+                "price": float(it["product_price"])
+            }
+            for it in items_rows
+        ]
+    }
     return result
 
 if __name__ == "__main__":

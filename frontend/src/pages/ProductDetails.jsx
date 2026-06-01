@@ -70,7 +70,7 @@ export default function ProductDetails() {
               />
             ) : (
               <div className={`${styles.placeholder} rounded-start`}>
-                <i className="bi bi-image text-muted" style={{ fontSize: '4rem' }}></i>
+                <i className={`bi bi-image text-muted ${styles.placeholderIcon}`}></i>
               </div>
             )}
           </div>
@@ -91,12 +91,11 @@ export default function ProductDetails() {
                 <div className="col-auto">
                   <input
                     type="number"
-                    className="form-control"
+                    className={`form-control ${styles.quantityInput}`}
                     min="1"
                     max={product.stock_quantity}
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
-                    style={{ width: '80px' }}
                   />
                 </div>
                 <div className="col-auto">
