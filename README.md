@@ -18,37 +18,36 @@
 
 ## Структура проекта
 
-├── auth_service/          # Сервис аутентификации (Node.js + Express)
+├── auth_service/                # Сервис аутентификации (Node.js + Express)
 │   ├── server.js
 │   └── package.json
 ├── backend/
-│   ├── product_service/   # Сервис товаров (FastAPI + SQLite)
+│   ├── product_service/         # Сервис товаров (FastAPI + SQLite)
 │   │   ├── main.py
 │   │   ├── services.py
 │   │   ├── database.py
 │   │   ├── schemas.py
 │   │   ├── auth.py
-│   │   ├── seed_products.py      # скрипт для наполнения базы 20 товарами
-│   │   ├── fix_categories.py     # скрипт для простановки категорий
+│   │   ├── seed_products.py
+│   │   ├── fix_categories.py
 │   │   └── requirements.txt
-│   └── order_service/     # Сервис заказов (FastAPI + SQLite)
+│   └── order_service/           # Сервис заказов (FastAPI + SQLite)
 │       ├── main.py
 │       ├── services.py
 │       ├── database.py
 │       ├── schemas.py
 │       ├── auth.py
 │       └── requirements.txt
-├── frontend/              # React-приложение (Vite)
+├── frontend/                    # React-приложение (Vite)
 │   ├── src/
-│   │   ├── pages/         # страницы (Catalog, Cart, AdminPanel, OrderTracking…)
-│   │   ├── contexts/      # контекст корзины
-│   │   ├── components/    # Header, Footer
-│   │   └── …
+│   │   ├── pages/
+│   │   ├── contexts/
+│   │   ├── components/
+│   │   └── ...
 │   ├── index.html
 │   └── package.json
 ├── .gitignore
 └── README.md
-
 ---
 
 ## Установка и запуск
