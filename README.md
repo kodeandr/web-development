@@ -16,40 +16,6 @@
 
 ---
 
-## Структура проекта
-
-├── auth_service/                # Сервис аутентификации (Node.js + Express)
-│   ├── server.js
-│   └── package.json
-├── backend/
-│   ├── product_service/         # Сервис товаров (FastAPI + SQLite)
-│   │   ├── main.py
-│   │   ├── services.py
-│   │   ├── database.py
-│   │   ├── schemas.py
-│   │   ├── auth.py
-│   │   ├── seed_products.py
-│   │   ├── fix_categories.py
-│   │   └── requirements.txt
-│   └── order_service/           # Сервис заказов (FastAPI + SQLite)
-│       ├── main.py
-│       ├── services.py
-│       ├── database.py
-│       ├── schemas.py
-│       ├── auth.py
-│       └── requirements.txt
-├── frontend/                    # React-приложение (Vite)
-│   ├── src/
-│   │   ├── pages/
-│   │   ├── contexts/
-│   │   ├── components/
-│   │   └── ...
-│   ├── index.html
-│   └── package.json
-├── .gitignore
-└── README.md
----
-
 ## Установка и запуск
 
 1. Клонирование репозитория
